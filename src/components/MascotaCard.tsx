@@ -4,12 +4,17 @@ import { Mascota, EstadoMascota } from '../types/mascota';
 
 type Props = {
   mascota: Mascota;
+  usuarioActualId?: string; // <--- ID del usuario con la sesión activa
   onPress: (mascota: Mascota) => void;
   onDelete: (id: string) => void;
   onUpdateEstado: (id: string, nuevoEstado: EstadoMascota) => void;
 };
 
-export default function MascotaCard({ mascota, onPress, onDelete, onUpdateEstado }: Props) {
+export default function MascotaCard({ mascota, usuarioActualId, onPress, onDelete, onUpdateEstado }: Props) {
+  
+  // Validamos si el usuario actual es el autor/dueño de este posteo
+  const esDueño = usuarioActualId === mascota.autorId;
+
   // Configuración de colores según el estado (Azul unificado para En adopción)
   const getEstadoConfig = (estado: EstadoMascota) => {
     switch (estado) {
@@ -18,7 +23,7 @@ export default function MascotaCard({ mascota, onPress, onDelete, onUpdateEstado
       case 'Encontrado':
         return { label: '🟢 Encontrado', color: '#15803d', bg: '#f0fdf4' };
       case 'En adopción':
-        return { label: '🔵 En adopción', color: '#1d4ed8', bg: '#eff6ff' }; // Azul unificado
+        return { label: '🔵 En adopción', color: '#1d4ed8', bg: '#eff6ff' };
     }
   };
 
@@ -39,42 +44,44 @@ export default function MascotaCard({ mascota, onPress, onDelete, onUpdateEstado
         <Text style={styles.titulo} numberOfLines={2}>{mascota.titulo}</Text>
         <Text style={styles.zonaText}>📍 {mascota.zona}</Text>
 
-        {/* Botones de acción rápida y cambio de estado */}
-        <View style={styles.footerRow}>
-          <View style={styles.estadoAcciones}>
-            {mascota.estado !== 'Perdido' && (
-              <TouchableOpacity 
-                style={styles.actionPill} 
-                onPress={() => onUpdateEstado(mascota.id, 'Perdido')}
-              >
-                <Text style={styles.actionPillText}>Marcar Perdido</Text>
-              </TouchableOpacity>
-            )}
-            {mascota.estado !== 'Encontrado' && (
-              <TouchableOpacity 
-                style={styles.actionPill} 
-                onPress={() => onUpdateEstado(mascota.id, 'Encontrado')}
-              >
-                <Text style={styles.actionPillText}>Marcar Encontrado</Text>
-              </TouchableOpacity>
-            )}
-            {mascota.estado !== 'En adopción' && (
-              <TouchableOpacity 
-                style={styles.actionPill} 
-                onPress={() => onUpdateEstado(mascota.id, 'En adopción')}
-              >
-                <Text style={styles.actionPillText}>Marcar Adopción</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+        {/* Botones de acción rápida condicionados: SOLO se muestran si el usuario logueado es el dueño */}
+        {esDueño && (
+          <View style={styles.footerRow}>
+            <View style={styles.estadoAcciones}>
+              {mascota.estado !== 'Perdido' && (
+                <TouchableOpacity 
+                  style={styles.actionPill} 
+                  onPress={() => onUpdateEstado(mascota.id, 'Perdido')}
+                >
+                  <Text style={styles.actionPillText}>Marcar Perdido</Text>
+                </TouchableOpacity>
+              )}
+              {mascota.estado !== 'Encontrado' && (
+                <TouchableOpacity 
+                  style={styles.actionPill} 
+                  onPress={() => onUpdateEstado(mascota.id, 'Encontrado')}
+                >
+                  <Text style={styles.actionPillText}>Marcar Encontrado</Text>
+                </TouchableOpacity>
+              )}
+              {mascota.estado !== 'En adopción' && (
+                <TouchableOpacity 
+                  style={styles.actionPill} 
+                  onPress={() => onUpdateEstado(mascota.id, 'En adopción')}
+                >
+                  <Text style={styles.actionPillText}>Marcar Adopción</Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
-          <TouchableOpacity 
-            style={styles.deleteBtn} 
-            onPress={() => onDelete(mascota.id)}
-          >
-            <Text style={styles.deleteBtnText}>🗑️</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity 
+              style={styles.deleteBtn} 
+              onPress={() => onDelete(mascota.id)}
+            >
+              <Text style={styles.deleteBtnText}>🗑️</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );

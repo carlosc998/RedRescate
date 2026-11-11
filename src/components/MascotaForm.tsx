@@ -5,11 +5,12 @@ import * as Location from 'expo-location';
 import { Mascota, EstadoMascota, TipoMascota } from '../types/mascota';
 
 type Props = {
+  usuarioActualId: string;
   onAddMascota: (mascota: Mascota) => void;
   onCancel: () => void;
 };
 
-export default function MascotaForm({ onAddMascota, onCancel }: Props) {
+export default function MascotaForm({ usuarioActualId, onAddMascota, onCancel }: Props) {
   const [titulo, setTitulo] = useState('');
   const [tipo, setTipo] = useState<TipoMascota>('Perro');
   const [estado, setEstado] = useState<EstadoMascota>('Perdido');
@@ -132,6 +133,7 @@ export default function MascotaForm({ onAddMascota, onCancel }: Props) {
       imagen,
       descripcion,
       fecha: new Date().toLocaleDateString(),
+      autorId: usuarioActualId, // <--- Asignación del usuario logueado
     };
 
     onAddMascota(nuevaMascota);

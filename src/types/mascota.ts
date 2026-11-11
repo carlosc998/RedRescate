@@ -13,4 +13,5 @@ export interface Mascota {
   fecha: string;
   latitud?: number;
   longitud?: number;
+  autorId: string;
 }

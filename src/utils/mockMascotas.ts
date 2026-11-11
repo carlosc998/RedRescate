@@ -3,24 +3,38 @@ import { Mascota } from '../types/mascota';
 export const INITIAL_MASCOTAS: Mascota[] = [
   {
     id: '1',
-    titulo: 'Perrito con collar rojo visto cerca de la plaza',
+    titulo: 'Poodle marrón perdido en Palermo',
     tipo: 'Perro',
     estado: 'Perdido',
     zona: 'Palermo, CABA',
-    contacto: '+541198765432',
+    contacto: '11 2345-6789',
     imagen: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1',
-    descripcion: 'Es muy miedoso, tiene una mancha blanca en el pecho. Estaba asustado por los ruidos.',
-    fecha: '2026-10-25'
+    descripcion: 'Se asustó con los fuegos artificiales y salió corriendo. Lleva collar rojo.',
+    fecha: '10/06/2026',
+    autorId: 'user_1',
   },
   {
     id: '2',
-    titulo: 'Gatito naranja rescatado en cochera',
+    titulo: 'Gato siamés encontrado en Belgrano',
     tipo: 'Gato',
     estado: 'Encontrado',
     zona: 'Belgrano, CABA',
-    contacto: '+541112345678',
+    contacto: '11 9876-5432',
     imagen: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba',
-    descripcion: 'Apareció maullando adentro de un edificio. Es cachorro, muy cariñoso.',
-    fecha: '2026-10-24'
-  }
+    descripcion: 'Apareció en el jardín de mi edificio. Muy manso y bien cuidado.',
+    fecha: '09/06/2026',
+    autorId: 'user_2',
+  },
+  {
+    id: '3',
+    titulo: 'Cachorritos en busca de hogar responsable',
+    tipo: 'Perro',
+    estado: 'En adopción',
+    zona: 'San Telmo, CABA',
+    contacto: 'refugio@redrescate.com',
+    imagen: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb',
+    descripcion: 'Son tres hermanitos vacunados y desparasitados listos para adoptar.',
+    fecha: '08/06/2026',
+    autorId: 'user_3',
+  },
 ];

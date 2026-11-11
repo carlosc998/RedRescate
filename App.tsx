@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, FlatList, SafeAreaView, Alert, TouchableOpacity, Modal } from 'react-native';
 import { Mascota, EstadoMascota } from './src/types/mascota';
+import { Usuario } from './src/types/usuario';
 import { INITIAL_MASCOTAS } from './src/utils/mockMascotas';
 import MascotaCard from './src/components/MascotaCard';
 import MascotaForm from './src/components/MascotaForm';
+import LoginModal from './src/components/LoginModal';
 
 export default function App() {
   const [mascotas, setMascotas] = useState<Mascota[]>(INITIAL_MASCOTAS);
   const [filtroSeleccionado, setFiltroSeleccionado] = useState<EstadoMascota | 'Todos'>('Todos');
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   
+  // Estados para la simulación de Autenticación / Login
+  const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null); // Inicia deslogueado
+  const [modalLoginVisible, setModalLoginVisible] = useState(false);
+
   const [menuVisible, setMenuVisible] = useState(false);
   const [modalInfoVisible, setModalInfoVisible] = useState(false);
 
@@ -36,6 +42,18 @@ export default function App() {
       const actualizadas = prevMascotas.filter((m) => String(m.id) !== String(id));
       return actualizadas;
     });
+  };
+
+  // Interceptor para verificar si hay sesión antes de permitir publicar
+  const handleIntentarPublicar = () => {
+    setMenuVisible(false);
+    if (!usuarioActual) {
+      // Si no está logueado, abrimos el modal de login
+      setModalLoginVisible(true);
+    } else {
+      // Si ya está logueado, abrimos el formulario directamente
+      setMostrarFormulario(true);
+    }
   };
 
   const mascotasFiltradas = filtroSeleccionado === 'Todos'
@@ -77,10 +95,21 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-        {/* Subtítulo dinámico con conteo */}
-        <Text style={styles.subtitulo}>
-          {mascotas.length} reportes disponibles en la red
-        </Text>
+        {/* Subtítulo dinámico con conteo e indicador de sesión */}
+        <View style={styles.subtituloRow}>
+          <Text style={styles.subtitulo}>
+            {mascotas.length} reportes disponibles en la red
+          </Text>
+          {usuarioActual ? (
+            <Text style={styles.userActiveBadge} numberOfLines={1}>
+              👤 {usuarioActual.nombre.split(' ')[0]}
+            </Text>
+          ) : (
+            <TouchableOpacity onPress={() => setModalLoginVisible(true)}>
+              <Text style={styles.loginPromptText}>🔑 Iniciar sesión</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* FILTROS EN FORMATO PÍLDORA (CHIPS) MÁS FLUIDOS */}
         {!mostrarFormulario && (
@@ -108,6 +137,7 @@ export default function App() {
       {mostrarFormulario ? (
         <View style={styles.bodyContainer}>
           <MascotaForm 
+            usuarioActualId={usuarioActual?.id || ''}
             onAddMascota={handleAddMascota} 
             onCancel={() => setMostrarFormulario(false)} 
           />
@@ -119,6 +149,7 @@ export default function App() {
           renderItem={({ item }) => (
             <MascotaCard 
               mascota={item} 
+              usuarioActualId={usuarioActual?.id}
               onPress={handlePressMascota} 
               onDelete={handleDeleteMascota} 
               onUpdateEstado={handleUpdateEstado}
@@ -145,6 +176,35 @@ export default function App() {
             </View>
 
             <View style={styles.drawerBody}>
+              {/* Información de Sesión en el Menú */}
+              <View style={styles.sessionInfoBox}>
+                {usuarioActual ? (
+                  <View>
+                    <Text style={styles.sessionUserTitle}>Conectado como:</Text>
+                    <Text style={styles.sessionUserName}>{usuarioActual.nombre}</Text>
+                    <TouchableOpacity 
+                      style={styles.switchAccountBtn}
+                      onPress={() => {
+                        setMenuVisible(false);
+                        setModalLoginVisible(true);
+                      }}
+                    >
+                      <Text style={styles.switchAccountText}>🔄 Cambiar / Cerrar sesión</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity 
+                    style={styles.loginMenuBtn}
+                    onPress={() => {
+                      setMenuVisible(false);
+                      setModalLoginVisible(true);
+                    }}
+                  >
+                    <Text style={styles.loginMenuBtnText}>🔑 Iniciar sesión (Prueba)</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
               <TouchableOpacity 
                 style={styles.drawerItem} 
                 onPress={() => {
@@ -158,10 +218,7 @@ export default function App() {
 
               <TouchableOpacity 
                 style={styles.drawerItem} 
-                onPress={() => {
-                  setMostrarFormulario(true);
-                  setMenuVisible(false);
-                }}
+                onPress={handleIntentarPublicar}
               >
                 <Text style={styles.drawerItemText}>➕ Publicar Nuevo Reporte</Text>
               </TouchableOpacity>
@@ -183,6 +240,22 @@ export default function App() {
           </View>
         </View>
       </Modal>
+
+      {/* MODAL DE LOGIN / SELECCIÓN DE USUARIOS */}
+      <LoginModal
+        visible={modalLoginVisible}
+        usuarioActual={usuarioActual}
+        onSelectUsuario={(u) => {
+          setUsuarioActual(u);
+          setModalLoginVisible(false);
+          // Opcional: si abrió el login intentando publicar, abrimos el form al loguearse
+          setMostrarFormulario(true);
+        }}
+        onLogout={() => {
+          setUsuarioActual(null);
+        }}
+        onClose={() => setModalLoginVisible(false)}
+      />
 
       {/* MODAL ESTADÍSTICAS */}
       <Modal
@@ -275,11 +348,31 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     letterSpacing: -0.5,
   },
+  subtituloRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   subtitulo: { 
     fontSize: 13, 
     color: '#64748b', 
-    marginBottom: 16,
     fontWeight: '500',
+  },
+  userActiveBadge: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#15803d',
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  loginPromptText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1d4ed8',
   },
   menuBtn: {
     backgroundColor: '#f8fafc',
@@ -303,7 +396,7 @@ const styles = StyleSheet.create({
   filtroChip: { 
     paddingHorizontal: 12, 
     paddingVertical: 6, 
-    borderRadius: 20, // Estilo píldora moderna
+    borderRadius: 20,
     backgroundColor: '#f8fafc', 
     borderWidth: 1, 
     borderColor: '#cbd5e1' 
@@ -368,6 +461,41 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 20,
     gap: 12,
+  },
+  sessionInfoBox: {
+    backgroundColor: '#f8fafc',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 8,
+  },
+  sessionUserTitle: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748b',
+    textTransform: 'uppercase',
+  },
+  sessionUserName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginVertical: 2,
+  },
+  switchAccountText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#1d4ed8',
+    marginTop: 4,
+  },
+  loginMenuBtn: {
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  loginMenuBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1d4ed8',
   },
   drawerItem: {
     paddingVertical: 12,
@@ -444,5 +572,13 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '600',
     fontSize: 13,
+  },
+  switchAccountBtn: {
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
   },
 });
