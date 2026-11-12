@@ -4,7 +4,7 @@ import { Mascota, EstadoMascota } from '../types/mascota';
 
 type Props = {
   mascota: Mascota;
-  usuarioActualId?: string; // <--- ID del usuario con la sesión activa
+  usuarioActualId?: string;
   onPress: (mascota: Mascota) => void;
   onDelete: (id: string) => void;
   onUpdateEstado: (id: string, nuevoEstado: EstadoMascota) => void;
@@ -12,10 +12,8 @@ type Props = {
 
 export default function MascotaCard({ mascota, usuarioActualId, onPress, onDelete, onUpdateEstado }: Props) {
   
-  // Validamos si el usuario actual es el autor/dueño de este posteo
   const esDueño = usuarioActualId === mascota.autorId;
 
-  // Configuración de colores según el estado (Azul unificado para En adopción)
   const getEstadoConfig = (estado: EstadoMascota) => {
     switch (estado) {
       case 'Perdido':
@@ -44,7 +42,6 @@ export default function MascotaCard({ mascota, usuarioActualId, onPress, onDelet
         <Text style={styles.titulo} numberOfLines={2}>{mascota.titulo}</Text>
         <Text style={styles.zonaText}>📍 {mascota.zona}</Text>
 
-        {/* Botones de acción rápida condicionados: SOLO se muestran si el usuario logueado es el dueño */}
         {esDueño && (
           <View style={styles.footerRow}>
             <View style={styles.estadoAcciones}>

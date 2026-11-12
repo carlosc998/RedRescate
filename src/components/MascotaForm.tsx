@@ -58,7 +58,7 @@ export default function MascotaForm({ usuarioActualId, onAddMascota, onCancel }:
           mediaTypes: ['images'],
           allowsEditing: true,
           aspect: [4, 3],
-          quality: 0.4, // El punto justo entre excelente calidad visual y bajo peso de memoria
+          quality: 0.4,
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
