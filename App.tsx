@@ -9,11 +9,10 @@ import LoginModal from './src/components/LoginModal';
 
 export default function App() {
   const [mascotas, setMascotas] = useState<Mascota[]>(INITIAL_MASCOTAS);
-  const [filtroSeleccionado, setFiltroSeleccionado] = useState<EstadoMascota | 'Todos'>('Todos');
+  const [filtroSeleccionado, setFiltroSeleccionado] = useState<EstadoMascota | 'Todos' | 'MisReportes'>('Todos');
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   
-  // Estados para la simulación de Autenticación / Login
-  const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null); // Inicia deslogueado
+  const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
   const [modalLoginVisible, setModalLoginVisible] = useState(false);
 
   const [menuVisible, setMenuVisible] = useState(false);
@@ -44,21 +43,25 @@ export default function App() {
     });
   };
 
-  // Interceptor para verificar si hay sesión antes de permitir publicar
   const handleIntentarPublicar = () => {
     setMenuVisible(false);
     if (!usuarioActual) {
-      // Si no está logueado, abrimos el modal de login
       setModalLoginVisible(true);
     } else {
-      // Si ya está logueado, abrimos el formulario directamente
       setMostrarFormulario(true);
     }
   };
 
-  const mascotasFiltradas = filtroSeleccionado === 'Todos'
-    ? mascotas
-    : mascotas.filter(m => m.estado === filtroSeleccionado);
+  const mascotasFiltradas = (() => {
+    if (filtroSeleccionado === 'MisReportes') {
+      if (!usuarioActual) return [];
+      return mascotas.filter(m => m.autorId === usuarioActual.id);
+    }
+    if (filtroSeleccionado === 'Todos') {
+      return mascotas;
+    }
+    return mascotas.filter(m => m.estado === filtroSeleccionado);
+  })();
 
   const filtros: { label: string; value: EstadoMascota | 'Todos' }[] = [
     { label: 'Todos', value: 'Todos' },
@@ -76,14 +79,17 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER REDISEÑADO CON ESTILO NATIVO MODERNO */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
             <View style={styles.badgeBrand}>
-              <Text style={styles.badgeBrandText}>COMUNIDAD ACTIVA</Text>
+              <Text style={styles.badgeBrandText}>
+                {filtroSeleccionado === 'MisReportes' ? 'VISTA PERSONAL' : 'COMUNIDAD ACTIVA'}
+              </Text>
             </View>
-            <Text style={styles.titulo}>Red Rescate 🐾</Text>
+            <Text style={styles.titulo}>
+              {filtroSeleccionado === 'MisReportes' ? 'Mis Publicaciones 👤' : 'Red Rescate 🐾'}
+            </Text>
           </View>
           
           <TouchableOpacity 
@@ -95,10 +101,12 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-        {/* Subtítulo dinámico con conteo e indicador de sesión */}
         <View style={styles.subtituloRow}>
           <Text style={styles.subtitulo}>
-            {mascotas.length} reportes disponibles en la red
+            {filtroSeleccionado === 'MisReportes' 
+              ? `${mascotasFiltradas.length} reportes creados por ti`
+              : `${mascotas.length} reportes disponibles en la red`
+            }
           </Text>
           {usuarioActual ? (
             <Text style={styles.userActiveBadge} numberOfLines={1}>
@@ -111,8 +119,7 @@ export default function App() {
           )}
         </View>
 
-        {/* FILTROS EN FORMATO PÍLDORA (CHIPS) MÁS FLUIDOS */}
-        {!mostrarFormulario && (
+        {!mostrarFormulario && filtroSeleccionado !== 'MisReportes' && (
           <View style={styles.filtrosContainer}>
             {filtros.map((filtro) => {
               const isActive = filtroSeleccionado === filtro.value;
@@ -131,9 +138,17 @@ export default function App() {
             })}
           </View>
         )}
+
+        {filtroSeleccionado === 'MisReportes' && !mostrarFormulario && (
+          <TouchableOpacity 
+            style={styles.volverInicioBtn}
+            onPress={() => setFiltroSeleccionado('Todos')}
+          >
+            <Text style={styles.volverInicioText}>← Volver a Ver Todos los Reportes</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* CUERPO DE LA APLICACIÓN */}
       {mostrarFormulario ? (
         <View style={styles.bodyContainer}>
           <MascotaForm 
@@ -156,10 +171,16 @@ export default function App() {
             />
           )}
           contentContainerStyle={styles.lista}
+          ListEmptyComponent={
+              filtroSeleccionado === 'MisReportes' ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No tienes publicaciones registradas aún.</Text>
+                </View>
+              ) : <></>
+            }
         />
       )}
 
-      {/* MODAL MENÚ HAMBURGUESA */}
       <Modal
         visible={menuVisible}
         transparent={true}
@@ -176,7 +197,6 @@ export default function App() {
             </View>
 
             <View style={styles.drawerBody}>
-              {/* Información de Sesión en el Menú */}
               <View style={styles.sessionInfoBox}>
                 {usuarioActual ? (
                   <View>
@@ -218,6 +238,22 @@ export default function App() {
 
               <TouchableOpacity 
                 style={styles.drawerItem} 
+                onPress={() => {
+                  setMenuVisible(false);
+                  if (!usuarioActual) {
+                    Alert.alert('Acceso restringido', 'Debes iniciar sesión para ver tus publicaciones.');
+                    setModalLoginVisible(true);
+                  } else {
+                    setMostrarFormulario(false);
+                    setFiltroSeleccionado('MisReportes');
+                  }
+                }}
+              >
+                <Text style={styles.drawerItemText}>👤 Mis Publicaciones</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.drawerItem} 
                 onPress={handleIntentarPublicar}
               >
                 <Text style={styles.drawerItemText}>➕ Publicar Nuevo Reporte</Text>
@@ -241,23 +277,22 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL DE LOGIN / SELECCIÓN DE USUARIOS */}
       <LoginModal
         visible={modalLoginVisible}
         usuarioActual={usuarioActual}
         onSelectUsuario={(u) => {
           setUsuarioActual(u);
           setModalLoginVisible(false);
-          // Opcional: si abrió el login intentando publicar, abrimos el form al loguearse
-          setMostrarFormulario(true);
+          setMostrarFormulario(false);
+          setFiltroSeleccionado('Todos');
         }}
         onLogout={() => {
           setUsuarioActual(null);
+          setFiltroSeleccionado('Todos');
         }}
         onClose={() => setModalLoginVisible(false)}
       />
 
-      {/* MODAL ESTADÍSTICAS */}
       <Modal
         visible={modalInfoVisible}
         transparent={true}
@@ -352,7 +387,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   subtitulo: { 
     fontSize: 13, 
@@ -413,12 +448,29 @@ const styles = StyleSheet.create({
   filtroTextoActivo: { 
     color: '#ffffff',
   },
+  volverInicioBtn: {
+    marginTop: 4,
+  },
+  volverInicioText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1d4ed8',
+  },
   bodyContainer: { 
     padding: 16, 
     flex: 1 
   },
   lista: { 
     padding: 16,
+  },
+  emptyContainer: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
@@ -482,11 +534,18 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     marginVertical: 2,
   },
+  switchAccountBtn: {
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
   switchAccountText: {
     fontSize: 11,
     fontWeight: '600',
     color: '#1d4ed8',
-    marginTop: 4,
   },
   loginMenuBtn: {
     alignItems: 'center',
@@ -549,8 +608,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+  borderBottomWidth: 1,
+  borderBottomColor: '#f1f5f9',
   },
   statLabel: {
     fontSize: 13,
@@ -572,13 +631,5 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '600',
     fontSize: 13,
-  },
-  switchAccountBtn: {
-    marginTop: 6,
-    alignSelf: 'flex-start',
-    backgroundColor: '#eff6ff',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 4,
   },
 });
