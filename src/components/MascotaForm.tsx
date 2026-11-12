@@ -20,7 +20,6 @@ export default function MascotaForm({ usuarioActualId, onAddMascota, onCancel }:
   const [descripcion, setDescripcion] = useState('');
   const [loadingLocation, setLoadingLocation] = useState(false);
 
-  // 1. Seleccionar imagen desde la galería del dispositivo
   const pickImageFromGallery = async () => {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -46,32 +45,31 @@ export default function MascotaForm({ usuarioActualId, onAddMascota, onCancel }:
     }
   };
 
-  // 2. Tomar fotografía directamente con la cámara del teléfono
   const takePhotoWithCamera = async () => {
-    try {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-      
-      if (!permissionResult.granted) {
-        Alert.alert('Permiso requerido', 'Se necesitan permisos para utilizar la cámara.');
-        return;
+      try {
+        const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+        
+        if (!permissionResult.granted) {
+          Alert.alert('Permiso requerido', 'Se necesitan permisos para utilizar la cámara.');
+          return;
+        }
+
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.4, // El punto justo entre excelente calidad visual y bajo peso de memoria
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          setImagen(result.assets[0].uri);
+        }
+      } catch (error) {
+        console.error('Error al tomar la foto:', error);
+        Alert.alert('Error', 'No se pudo capturar la fotografía.');
       }
+    };
 
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setImagen(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('Error al tomar la foto:', error);
-      Alert.alert('Error', 'No se pudo capturar la fotografía.');
-    }
-  };
-
-  // Obtener ubicación GPS con Geocodificación Inversa
   const getLocation = async () => {
     try {
       setLoadingLocation(true);
@@ -133,7 +131,7 @@ export default function MascotaForm({ usuarioActualId, onAddMascota, onCancel }:
       imagen,
       descripcion,
       fecha: new Date().toLocaleDateString(),
-      autorId: usuarioActualId, // <--- Asignación del usuario logueado
+      autorId: usuarioActualId,
     };
 
     onAddMascota(nuevaMascota);
@@ -155,7 +153,6 @@ export default function MascotaForm({ usuarioActualId, onAddMascota, onCancel }:
         />
       </View>
 
-      {/* TIPO DE ANIMAL */}
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Tipo de animal</Text>
         <View style={styles.optionsRow}>
@@ -171,7 +168,6 @@ export default function MascotaForm({ usuarioActualId, onAddMascota, onCancel }:
         </View>
       </View>
 
-      {/* ESTADO DEL REPORTE */}
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Estado del reporte</Text>
         <View style={styles.optionsRow}>
@@ -187,7 +183,6 @@ export default function MascotaForm({ usuarioActualId, onAddMascota, onCancel }:
         </View>
       </View>
 
-      {/* ZONA / GPS */}
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Zona / Barrio (o usa GPS)</Text>
         <View style={styles.zonaRow}>
@@ -215,7 +210,6 @@ export default function MascotaForm({ usuarioActualId, onAddMascota, onCancel }:
         />
       </View>
 
-      {/* SECCIÓN DE FOTO: CÁMARA Y GALERÍA */}
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Fotografía del animal (Obligatorio)</Text>
         
